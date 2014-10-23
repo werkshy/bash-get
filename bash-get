@@ -85,13 +85,15 @@ _make_links() {
 	done
 	for dotfile in dots/*; do
 		dotpath="$PWD/$dotfile"
-		homepath="${HOME}/.$(basename "$dotfile")"
-		if [ -e "$homepath" ]; then
-			echo "Already exists $homepath"
-			continue
+		if [ -f "$dotfile" ]; then
+			homepath="${HOME}/.$(basename "$dotfile")"
+			if [ -e "$homepath" ]; then
+				echo "Already exists $homepath"
+				continue
+			fi
+			echo "Copying $dotfile to $homepath"
+			cp "$dotpath" "$homepath"
 		fi
-		echo "Copying $dotfile to $homepath"
-		cp "$dotpath" "$homepath"
 	done
 	popd > /dev/null
 }
