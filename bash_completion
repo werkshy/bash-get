@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Part of bash-get https://github.com/werkshy/bash-get
+
+# This file should be placed at $HOME/.bash_completion and
+# will enable the user's ~/.bash-get/bash_completion.d directory.
+
+USER_COMPLETION_DIR=$HOME/.bash-get/bash_completion.d
+if [[ $USER_COMPLETION_DIR != $BASH_COMPLETION_COMPAT_DIR && \
+    -d $USER_COMPLETION_DIR && -r $USER_COMPLETION_DIR && \
+    -x $USER_COMPLETION_DIR ]]; then
+    for i in $(LC_ALL=C command ls "$USER_COMPLETION_DIR"); do
+        i=$USER_COMPLETION_DIR/$i
+        [[ ${i##*/} != @(*~|*.bak|*.swp|\#*\#|*.dpkg*|*.rpm@(orig|new|save)|Makefile*) \
+            && -f $i && -r $i ]] && . "$i"
+    done
+fi

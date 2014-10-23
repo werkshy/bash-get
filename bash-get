@@ -1,0 +1,167 @@
+#!/bin/bash
+
+# bash-get package manager for bash packages
+# (c) Andy O'Neill 2014 <andy@potatoriot.com>
+# https://github.com/werkshy/bash-get
+# See README.md for an overview of the project.
+
+# Usage:
+#    bash-get install path/to/git/repo
+#    bash-get help
+
+set -e
+
+BASE_DIR="$GET_BASE_DIR"
+
+if [ -z $BASE_DIR ]; then
+	BASE_DIR=$HOME/.bash-get
+fi
+BUNDLE_DIR=$BASE_DIR/bundles
+
+CMD=$1
+shift
+
+
+_usage() {
+	echo "bash-get COMMAND [options]"
+	echo "bash-get install GIT_URL"
+	echo "bash-get update PACKAGE_NAME"
+	echo "bash-get list (TODO)"
+}
+
+_clone() {
+	src=$1
+	dest=$2
+	parent=$(dirname $dest)
+	mkdir -p "$dest"
+	full_src="$src"
+	if [[ "$src" =~ /^github.com/ ]]; then
+		full_src="https://$src"
+	fi
+	echo "Cloning $full_src into $dest"
+	git clone "$full_src" "$dest"
+}
+
+_ensure() {
+	src=$1
+	dest=$2
+	if [ -d $dest/bin ]; then
+		return
+	fi
+	_clone "$src" "$dest"
+}
+
+# Figure out the install directory for a given 'source'
+_install_dir() {
+	src=$1
+	dest="${BUNDLE_DIR}/$(basename "$src")"
+	# Should we do github.com/user/repo like go?
+	echo "$dest"
+}
+
+
+# In a cloned repo, make links to the global bin/ and bash_completion.d
+# so that the files can be picked up by your shell (PATH and ~/.bash_completion)
+_make_links() {
+	pushd $1 > /dev/null
+	echo "Making links for $1"
+	mkdir -p ${BASE_DIR}/bash_completion.d
+	mkdir -p ${BASE_DIR}/bin
+	for binfile in bin/*; do
+		binpath="$PWD/$binfile"
+		linkpath="${BASE_DIR}/bin/$(basename "$binfile")"
+		if [ -f "$binpath" ]; then
+			echo "Linking $binpath to $linkpath"
+			ln -sf "$binpath" "$linkpath"
+		fi
+	done
+	for compfile in bash_completion.d/*; do
+		comppath="$PWD/$compfile"
+		linkpath="${BASE_DIR}/bash_completion.d/$(basename "$compfile")"
+		if [ -f "$comppath" ]; then
+			echo "Linking $comppath to $linkpath"
+			ln -sf "$comppath" "$linkpath"
+		fi
+	done
+	for dotfile in dots/*; do
+		dotpath="$PWD/$dotfile"
+		homepath="${HOME}/.$(basename "$dotfile")"
+		if [ -e "$homepath" ]; then
+			echo "Already exists $homepath"
+			continue
+		fi
+		echo "Copying $dotfile to $homepath"
+		cp "$dotpath" "$homepath"
+	done
+	popd > /dev/null
+}
+
+_install() {
+	echo "Installing $*"
+	dest=$(_install_dir "$1")
+	_ensure "$1" "$dest"
+	_make_links "$dest"
+}
+
+
+_update() {
+	echo "Installing $*"
+	dest=$(_install_dir "$1")
+	if ![ -d "$dest" ]; then
+		_install $*
+	else
+		cd "$dest"
+		git pull --rebase
+		make install
+	fi
+}
+
+_list_all() {
+	echo "Listing bash-get packages in $BUNDLE_DIR" >&2
+	for project in $BUNDLE_DIR/*; do
+		if [ -d $project ]; then
+			basename $project
+		fi
+	done
+}
+
+
+case $CMD in
+	install)
+		_install $*
+		;;
+	update)
+		_update $*
+		;;
+	list)
+		_list_all
+		;;
+	*)
+		_usage
+		;;
+esac
+
+
+# Create a skeleton makefile
+## getsh init
+### Copy makefile
+### Add INSTALL file
+### Initialize README.md file if not exists
+
+## BIN
+## DATA (icons, sounds etc)
+## CONFIG
+### DOT FILE (if not exists)
+### BASH COMPLETION
+## INSTALL FILE
+
+# FURTHER IDEAS
+
+# bash completion for 'get'
+
+# gettr (bundler analog)
+# Specify language and call out to other package managers
+# PARSE PACKAGE FILE
+## ~/.getsh/pkgfile
+## e.g. go:  'go get packagename'
+##      npm: 'npm install ~/.node_modules'
