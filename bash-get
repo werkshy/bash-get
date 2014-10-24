@@ -107,14 +107,14 @@ _install() {
 
 
 _update() {
-	echo "Installing $*"
 	dest=$(_install_dir "$1")
-	if ![ -d "$dest" ]; then
+	echo "Updating $* at $dest"
+	if ! [ -d "$dest" ]; then
 		_install $*
 	else
 		cd "$dest"
 		git pull --rebase
-		make install
+		_make_links "$dest"
 	fi
 }
 
