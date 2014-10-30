@@ -23,4 +23,4 @@ install_files: bash-get bashrc
 	chmod 755 ${DESTDIR}/bin/bash-get
 
 init_profile:
-	grep -q "${DESTDIR}/bashrc" ~/.bashrc  >/dev/null || echo "source ${DESTDIR}/bashrc" >> ~/.bashrc
+	grep -q '$$HOME/.bash-get/bashrc' ~/.bashrc  >/dev/null || echo 'source $$HOME/.bash-get/bashrc' >> ~/.bashrc
